@@ -1,111 +1,151 @@
-﻿#include <SFML/Audio.hpp>
-#include <SFML/Graphics.hpp>
-#include <vector>
-#include <random>
+﻿#include "TrainStation.h"
+#include <iostream>
 
-using namespace std;
-using namespace sf;
+int Station::prendrePassagers(int nombre) {
+    int pris = std::min(passagers, nombre);
+    passagers -= pris;
+    return pris;
+}
 
-float random(float min, float max) {
-    static random_device rd;
-    static mt19937 gen(rd());
-    uniform_real_distribution<float> dis(min, max);
-    return dis(gen);
+void Station::dessiner(sf::RenderWindow& window, const sf::Font& font) {
+    sf::CircleShape shape(10);
+    shape.setPosition(position.x - 10, position.y - 10);
+    shape.setFillColor(sf::Color::Green);
+    window.draw(shape);
+
+    // Texte pour le nombre de passagers
+    sf::Text passagersText(std::to_string(passagers) + " passagers", font, 12);
+    passagersText.setFillColor(sf::Color::White);
+    passagersText.setPosition(position.x, position.y + 20);
+    window.draw(passagersText);
+
+    // Texte pour le nom de la station
+    sf::Text nomText(nom, font, 15);
+    nomText.setFillColor(sf::Color::White);
+    nomText.setPosition(position.x - 10, position.y - 30);
+    window.draw(nomText);
 }
 
 
-int main()
-{
-    RenderWindow window(VideoMode(800, 600), "Ligne de Metro Courbe SFML");
+void Train::ajouterStation(const Station& station) {
+    parcours.push_back(station);
+}
 
-    Vector2f p0(50.0f, 300.0f);
-    Vector2f p1(200.0f, 100.0f);
-    Vector2f p2(400.0f, 500.0f);
-    Vector2f p3(750.0f, 300.0f);
-
-    vector<CircleShape> metroLineStops;
-    int numStops = 8;
-
-    for (int i = 0; i <= numStops; ++i) {
-        float t = static_cast<float>(i) / numStops;
-        Vector2f position = (1 - t) * (1 - t) * (1 - t) * p0 +
-            3 * (1 - t) * (1 - t) * t * p1 +
-            3 * (1 - t) * t * t * p2 +
-            t * t * t * p3;
-
-        CircleShape stop(10.0f);
-        stop.setFillColor(Color::Red);
-        stop.setPosition(position);
-
-        metroLineStops.push_back(stop);
+void Train::avancer(float deltaTime) {
+    if (tempsAttente > 0) {
+        tempsAttente -= deltaTime;
+        return;
     }
 
-    RectangleShape train(Vector2f(30.0f, 15.0f));
+    if (stationActuelle >= parcours.size()) {
+        enMouvement = false;
+        return;
+    }
 
+    position.x += vitesse.x * deltaTime;
+    if (position.x >= parcours[stationActuelle].getPosition().x) {
+        position.x = parcours[stationActuelle].getPosition().x;
+        passagers += parcours[stationActuelle].prendrePassagers(5);
+        tempsAttente = 5.0f;
+        stationActuelle++;
+    }
+}
 
-    train.setFillColor(Color::Green);
-    train.setPosition(metroLineStops[0].getPosition().x - 15.0f, metroLineStops[0].getPosition().y - 7.5f);
-    float trainSpeed = 0.3f;
-    unsigned int currentStop = 0;
-    Clock stopClock; // Utilisé pour mesurer le temps d'arrêt à chaque station
-    const Time stopTime = seconds(10.0f); // Durée d'arrêt à chaque station
+void Train::dessiner(sf::RenderWindow& window, const sf::Font& font) {
+    sf::RectangleShape shape(sf::Vector2f(20, 10));
+    shape.setPosition(position.x - 10, position.y - 5);
+    shape.setFillColor(sf::Color::Red);
+    window.draw(shape);
 
-    // Boucle principale
-    while (window.isOpen())
-    {
-        Event event;
-        while (window.pollEvent(event))
-        {
-            if (event.type == Event::Closed)
+    sf::Text text(std::to_string(passagers) + " passagers", font, 12);
+    text.setFillColor(sf::Color::White);
+    text.setPosition(position.x, position.y - 20);
+    window.draw(text);
+}
+
+void GestionnaireDeTrain::ajouterTrain(std::unique_ptr<Train> train) {
+    trains.push_back(std::move(train));
+}
+
+void GestionnaireDeTrain::mettreAJour(float deltaTime) {
+    for (auto& train : trains) {
+        train->avancer(deltaTime);
+    }
+}
+
+void GestionnaireDeTrain::dessiner(sf::RenderWindow& window, const sf::Font& font) {
+    for (auto& train : trains) {
+        train->dessiner(window, font);
+    }
+}
+
+int main() {
+    sf::RenderWindow window(sf::VideoMode(1200, 900), "Train Simulation");
+    GestionnaireDeTrain gestionnaire;
+    sf::Font font;
+
+    if (!font.loadFromFile("C:/Program Files/SFML/font/arial.ttf")) {
+        std::cerr << "Erreur de chargement de la police 'arial.ttf'" << std::endl;
+        return 1;
+    }
+
+    Station paris("Paris", { 100, 300 }, 50);
+    Station lyon("Lyon", { 250, 300 }, 60);
+    Station marseille("Marseille", { 400, 300 }, 40);
+    Station lille("Lille", { 550, 300 }, 30);
+    Station rennes("Rennes", { 700, 300 }, 20);
+    Station toulouse("Toulouse", { 850, 300 }, 25);
+    Station bruges("Bruges", { 1000, 300 }, 15);
+
+    auto train1 = std::make_unique<Train>(Coordonnees(50, 300));
+    train1->ajouterStation(paris);
+    train1->ajouterStation(lyon);
+    train1->ajouterStation(marseille);
+    train1->ajouterStation(lille);
+    train1->ajouterStation(rennes);
+    train1->ajouterStation(toulouse);
+    train1->ajouterStation(bruges);
+    train1->setVitesse(Coordonnees(50, 0));
+
+    gestionnaire.ajouterTrain(std::move(train1));
+
+    sf::Clock clock;
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
                 window.close();
-        }
-
-        // Déplacement du train
-        if (currentStop < metroLineStops.size() - 1) {
-            Vector2f direction = metroLineStops[currentStop + 1].getPosition() - train.getPosition();
-            float length = sqrt(direction.x * direction.x + direction.y * direction.y);
-            Vector2f unitDirection = direction / length;
-
-            train.move(unitDirection * trainSpeed);
-
-            if (length < trainSpeed) {
-                // Le train a atteint la prochaine station
-                currentStop++;
-                train.setPosition(metroLineStops[currentStop].getPosition().x - 15.0f,
-                    metroLineStops[currentStop].getPosition().y - 7.5f);
-
-                // Réinitialiser le chronomètre d'arrêt
-                stopClock.restart();
             }
         }
 
+        float deltaTime = clock.restart().asSeconds();
+
         window.clear();
 
-        for (int i = 1; i < numStops + 1; ++i) {
-            // Dessiner la ligne de métro courbe avec les arrêts
-            Vertex line[] = {
-                Vertex(metroLineStops[i - 1].getPosition() + Vector2f(5.0f, 5.0f)),
-                Vertex(metroLineStops[i].getPosition() + Vector2f(5.0f, 5.0f))
-            };
-            window.draw(line, 2, Lines);
+        sf::Vertex line[] = {
+            sf::Vertex(sf::Vector2f(paris.getPosition().x, paris.getPosition().y)),
+            sf::Vertex(sf::Vector2f(lyon.getPosition().x, lyon.getPosition().y)),
+            sf::Vertex(sf::Vector2f(marseille.getPosition().x, marseille.getPosition().y)),
+            sf::Vertex(sf::Vector2f(lille.getPosition().x, lille.getPosition().y)),
+            sf::Vertex(sf::Vector2f(rennes.getPosition().x, rennes.getPosition().y)),
+            sf::Vertex(sf::Vector2f(toulouse.getPosition().x, toulouse.getPosition().y)),
+            sf::Vertex(sf::Vector2f(bruges.getPosition().x, bruges.getPosition().y))
+        };
+        window.draw(line, 7, sf::LinesStrip);
 
-            // Dessiner une deuxième ligne 10 pixels en dessous de la première ligne
-            Vertex lineBelow[] = {
-                Vertex(metroLineStops[i - 1].getPosition() + Vector2f(5.0f, 5.0f) + Vector2f(0.0f, 10.0f)),
-                Vertex(metroLineStops[i].getPosition() + Vector2f(5.0f, 5.0f) + Vector2f(0.0f, 10.0f))
-            };
-            window.draw(lineBelow, 2, Lines);
-        }
+        paris.dessiner(window, font);
+        lyon.dessiner(window, font);
+        marseille.dessiner(window, font);
+        lille.dessiner(window, font);
+        rennes.dessiner(window, font);
+        toulouse.dessiner(window, font);
+        bruges.dessiner(window, font);
 
-        // Dessiner les arrêts 
-        for (const auto& stop : metroLineStops) {
-            window.draw(stop);
-        }
-
-        // Dessiner le train
-        window.draw(train);
+        gestionnaire.mettreAJour(deltaTime);
+        gestionnaire.dessiner(window, font);
 
         window.display();
     }
+
     return 0;
 }
