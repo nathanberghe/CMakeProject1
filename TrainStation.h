@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <cstdlib>
+#include <ctime>
 
 struct Coordonnees {
     float x, y;
@@ -20,10 +22,10 @@ private:
 public:
     Station(std::string nom, Coordonnees pos, int passagersInitiaux = 0)
         : nom(nom), position(pos), passagers(passagersInitiaux) {}
-
-    int prendrePassagers(int nombre);
+    int prendrePassagers();
     void dessiner(sf::RenderWindow& window, const sf::Font& font);
     Coordonnees getPosition() const { return position; }
+    void reinitialiserEtGenererPassagers();
 };
 
 class Train {
@@ -42,6 +44,7 @@ public:
     void setVitesse(const Coordonnees& nouvelleVitesse) { vitesse = nouvelleVitesse; }
     void avancer(float deltaTime);
     void dessiner(sf::RenderWindow& window, const sf::Font& font);
+    std::vector<Station>& getParcours() { return parcours; }
 };
 
 class GestionnaireDeTrain {

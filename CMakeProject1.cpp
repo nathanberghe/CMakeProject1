@@ -1,11 +1,16 @@
 ﻿#include "TrainStation.h"
 #include <iostream>
 
-int Station::prendrePassagers(int nombre) {
-    int pris = std::min(passagers, nombre);
-    passagers -= pris;
+int Station::prendrePassagers() {
+    int pris = passagers;
+    passagers = 0;
     return pris;
 }
+
+void Station::reinitialiserEtGenererPassagers() {
+    passagers = rand() % 50 + 10;  // Générer un nouveau nombre aléatoire de passagers
+}
+
 
 void Station::dessiner(sf::RenderWindow& window, const sf::Font& font) {
     sf::CircleShape shape(10);
@@ -13,19 +18,11 @@ void Station::dessiner(sf::RenderWindow& window, const sf::Font& font) {
     shape.setFillColor(sf::Color::Green);
     window.draw(shape);
 
-    // Texte pour le nombre de passagers
-    sf::Text passagersText(std::to_string(passagers) + " passagers", font, 12);
-    passagersText.setFillColor(sf::Color::White);
-    passagersText.setPosition(position.x, position.y + 20);
-    window.draw(passagersText);
-
-    // Texte pour le nom de la station
-    sf::Text nomText(nom, font, 15);
-    nomText.setFillColor(sf::Color::White);
-    nomText.setPosition(position.x - 10, position.y - 30);
-    window.draw(nomText);
+    sf::Text text(nom + " " + std::to_string(passagers), font, 15);
+    text.setFillColor(sf::Color::White);
+    text.setPosition(position.x - 10, position.y - 30);
+    window.draw(text);
 }
-
 
 void Train::ajouterStation(const Station& station) {
     parcours.push_back(station);
@@ -34,22 +31,28 @@ void Train::ajouterStation(const Station& station) {
 void Train::avancer(float deltaTime) {
     if (tempsAttente > 0) {
         tempsAttente -= deltaTime;
+        // Vérifiez si le temps d'attente est terminé et si le train est à une station.
+        if (tempsAttente <= 0 && stationActuelle < parcours.size()) {
+            // Le train se prépare à partir.
+            enMouvement = true;  // Assurez-vous que le train est défini pour se déplacer
+        }
         return;
     }
 
-    if (stationActuelle >= parcours.size()) {
-        enMouvement = false;
-        return;
-    }
-
-    position.x += vitesse.x * deltaTime;
-    if (position.x >= parcours[stationActuelle].getPosition().x) {
-        position.x = parcours[stationActuelle].getPosition().x;
-        passagers += parcours[stationActuelle].prendrePassagers(5);
-        tempsAttente = 5.0f;
-        stationActuelle++;
+    // Si le train est en mouvement et pas encore arrivé à la prochaine station.
+    if (enMouvement && stationActuelle < parcours.size()) {
+        position.x += vitesse.x * deltaTime;
+        // Vérifiez si le train a atteint la prochaine station.
+        if (position.x >= parcours[stationActuelle].getPosition().x) {
+            position.x = parcours[stationActuelle].getPosition().x;
+            passagers += parcours[stationActuelle].prendrePassagers();
+            enMouvement = false;  // Le train s'arrête à la station
+            tempsAttente = 5.0f;  // Démarrer le temps d'attente à la station
+            stationActuelle++;  // Passer à la station suivante pour le prochain mouvement
+        }
     }
 }
+
 
 void Train::dessiner(sf::RenderWindow& window, const sf::Font& font) {
     sf::RectangleShape shape(sf::Vector2f(20, 10));
@@ -57,7 +60,7 @@ void Train::dessiner(sf::RenderWindow& window, const sf::Font& font) {
     shape.setFillColor(sf::Color::Red);
     window.draw(shape);
 
-    sf::Text text(std::to_string(passagers) + " passagers", font, 12);
+    sf::Text text("Passagers: " + std::to_string(passagers), font, 12);
     text.setFillColor(sf::Color::White);
     text.setPosition(position.x, position.y - 20);
     window.draw(text);
@@ -68,10 +71,22 @@ void GestionnaireDeTrain::ajouterTrain(std::unique_ptr<Train> train) {
 }
 
 void GestionnaireDeTrain::mettreAJour(float deltaTime) {
+    static float tempsDepuisDerniereGeneration = 0.0f;
+    tempsDepuisDerniereGeneration += deltaTime;
+
+    // Mise à jour des trains
     for (auto& train : trains) {
         train->avancer(deltaTime);
     }
+
+    // Régénération des passagers dans chaque station après un délai
+    if (tempsDepuisDerniereGeneration > 10.0f) {
+        // Pour chaque train, pour chaque station, réinitialiser et générer des passagers
+        tempsDepuisDerniereGeneration = 0.0f;
+    }
 }
+
+
 
 void GestionnaireDeTrain::dessiner(sf::RenderWindow& window, const sf::Font& font) {
     for (auto& train : trains) {
@@ -89,15 +104,17 @@ int main() {
         return 1;
     }
 
-    Station paris("Paris", { 100, 300 }, 50);
-    Station lyon("Lyon", { 250, 300 }, 60);
-    Station marseille("Marseille", { 400, 300 }, 40);
-    Station lille("Lille", { 550, 300 }, 30);
-    Station rennes("Rennes", { 700, 300 }, 20);
-    Station toulouse("Toulouse", { 850, 300 }, 25);
-    Station bruges("Bruges", { 1000, 300 }, 15);
+    srand(static_cast<unsigned>(time(nullptr)));
 
-    auto train1 = std::make_unique<Train>(Coordonnees(50, 300));
+    Station paris("Paris", { 100, 300 });
+    Station lyon("Lyon", { 250, 300 });
+    Station marseille("Marseille", { 400, 300 });
+    Station lille("Lille", { 500, 300 });
+    Station rennes("Rennes", { 700,300 });
+    Station toulouse("Toulouse", { 800,300 });
+    Station bruges("Bruges", { 950,300 });
+
+    auto train1 = std::make_unique<Train>(Coordonnees(100, 300));
     train1->ajouterStation(paris);
     train1->ajouterStation(lyon);
     train1->ajouterStation(marseille);
@@ -120,28 +137,30 @@ int main() {
 
         float deltaTime = clock.restart().asSeconds();
 
-        window.clear();
+        window.clear(sf::Color::Black);
 
+        gestionnaire.mettreAJour(deltaTime);
+
+        // Dessiner les lignes entre les stations
         sf::Vertex line[] = {
             sf::Vertex(sf::Vector2f(paris.getPosition().x, paris.getPosition().y)),
             sf::Vertex(sf::Vector2f(lyon.getPosition().x, lyon.getPosition().y)),
             sf::Vertex(sf::Vector2f(marseille.getPosition().x, marseille.getPosition().y)),
-            sf::Vertex(sf::Vector2f(lille.getPosition().x, lille.getPosition().y)),
+            sf::Vertex(sf::Vector2f(bruges.getPosition().x, bruges.getPosition().y)),
             sf::Vertex(sf::Vector2f(rennes.getPosition().x, rennes.getPosition().y)),
             sf::Vertex(sf::Vector2f(toulouse.getPosition().x, toulouse.getPosition().y)),
-            sf::Vertex(sf::Vector2f(bruges.getPosition().x, bruges.getPosition().y))
+            sf::Vertex(sf::Vector2f(lille.getPosition().x, lille.getPosition().y))
         };
         window.draw(line, 7, sf::LinesStrip);
 
-        paris.dessiner(window, font);
-        lyon.dessiner(window, font);
-        marseille.dessiner(window, font);
-        lille.dessiner(window, font);
-        rennes.dessiner(window, font);
-        toulouse.dessiner(window, font);
-        bruges.dessiner(window, font);
+        paris.dessiner(window,font);
+        lyon.dessiner(window,font);
+        marseille.dessiner(window,font);
+        lille.dessiner(window,font);
+        toulouse.dessiner(window,font);
+        rennes.dessiner(window,font);
+        bruges.dessiner(window,font);
 
-        gestionnaire.mettreAJour(deltaTime);
         gestionnaire.dessiner(window, font);
 
         window.display();
