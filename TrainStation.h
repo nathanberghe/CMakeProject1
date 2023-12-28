@@ -26,6 +26,8 @@ public:
     void dessiner(sf::RenderWindow& window, const sf::Font& font);
     Coordonnees getPosition() const { return position; }
     void reinitialiserEtGenererPassagers();
+    std::string getNom() const { return nom; }  // Ajout de la méthode getNom
+    int getPassagers() const { return passagers; }  // Ajout de la méthode getPassagerss
 };
 
 class Train {
@@ -37,9 +39,11 @@ private:
     bool enMouvement;
     float tempsAttente;
     int passagers;
+    int numeroTrain;
+    bool estArrive;
 
 public:
-    Train(Coordonnees pos) : position(pos), stationActuelle(0), enMouvement(true), tempsAttente(0.0f), passagers(0) {}
+    Train(Coordonnees pos, int num) : position(pos), stationActuelle(0), enMouvement(true), tempsAttente(0.0f), passagers(0), numeroTrain(num) {}
     void ajouterStation(const Station& station);
     void setVitesse(const Coordonnees& nouvelleVitesse) { vitesse = nouvelleVitesse; }
     void avancer(float deltaTime);
@@ -56,5 +60,23 @@ public:
     void mettreAJour(float deltaTime);
     void dessiner(sf::RenderWindow& window, const sf::Font& font);
 };
+
+class GestionnaireDeStations {
+private:
+    std::vector<Station> stations;
+
+public:
+    void ajouterStation(const Station& station) {
+        stations.push_back(station);
+    }
+
+    void dessinerStations(sf::RenderWindow& window, const sf::Font& font) {
+        for (auto& station : stations) {
+            station.dessiner(window, font);
+        }
+    }
+    std::vector<Station>& getStations() { return stations; }
+};
+
 
 #endif
