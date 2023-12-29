@@ -19,7 +19,7 @@ private:
     Coordonnees position;
     int passagers;
     float tempsDepuisDerniereRegeneration = 0.0f;
-    float intervalleDeRegeneration = 30.0f;
+    float intervalleDeRegeneration = 5.0f;
 
 public:
     Station(std::string nom, Coordonnees pos, int passagersInitiaux = 0)
@@ -52,6 +52,10 @@ public:
     void avancer(float deltaTime);
     void dessiner(sf::RenderWindow& window, const sf::Font& font);
     std::vector<Station>& getParcours() { return parcours; }
+    void arreter() {
+        enMouvement = false;
+        estArrive = true; // Vous pouvez choisir de marquer le train comme arrivé ou gérer cet état séparément.
+    }
 
 };
 
@@ -63,6 +67,11 @@ public:
     void ajouterTrain(std::unique_ptr<Train> train);
     void mettreAJour(float deltaTime);
     void dessiner(sf::RenderWindow& window, const sf::Font& font);
+    void arreterTousLesTrains() {
+        for (auto& train : trains) {
+            train->arreter();
+        }
+    }
 };
 
 class GestionnaireDeStations {

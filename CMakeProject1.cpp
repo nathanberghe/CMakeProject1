@@ -15,7 +15,6 @@ void Station::reinitialiserEtGenererPassagers() {
 void Station::mettreAJour(float deltaTime) {
     tempsDepuisDerniereRegeneration += deltaTime;
     if (tempsDepuisDerniereRegeneration >= intervalleDeRegeneration) {
-        reinitialiserEtGenererPassagers();
         tempsDepuisDerniereRegeneration = 0.0f;
     }
 }
@@ -203,6 +202,12 @@ int main() {
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window.close();
+            }
+            if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::A) {
+                    gestionnaire.arreterTousLesTrains();
+                    std::cout << "Arrêt d'urgence activé. Tous les trains sont arrêtés." << std::endl;
+                }
             }
         }
 
