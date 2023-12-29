@@ -56,6 +56,10 @@ public:
         enMouvement = false;
         estArrive = true; // Vous pouvez choisir de marquer le train comme arrivé ou gérer cet état séparément.
     }
+    void redemarrer() {
+        enMouvement = true;
+        estArrive = false; // Vous pouvez choisir de marquer le train comme arrivé ou gérer cet état séparément.
+    }
 
 };
 
@@ -70,6 +74,11 @@ public:
     void arreterTousLesTrains() {
         for (auto& train : trains) {
             train->arreter();
+        }
+    }
+    void redemarrerTousLesTrains() {
+        for (auto& train : trains) {
+            train->redemarrer();
         }
     }
 };

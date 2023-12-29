@@ -15,6 +15,7 @@ void Station::reinitialiserEtGenererPassagers() {
 void Station::mettreAJour(float deltaTime) {
     tempsDepuisDerniereRegeneration += deltaTime;
     if (tempsDepuisDerniereRegeneration >= intervalleDeRegeneration) {
+        reinitialiserEtGenererPassagers();
         tempsDepuisDerniereRegeneration = 0.0f;
     }
 }
@@ -206,7 +207,13 @@ int main() {
             if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::A) {
                     gestionnaire.arreterTousLesTrains();
-                    std::cout << "Arrêt d'urgence activé. Tous les trains sont arrêtés." << std::endl;
+                    std::cout << "Arret d'urgence active. Tous les trains sont arretes." << std::endl;
+                }
+            }
+            if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::B) {
+                    gestionnaire.redemarrerTousLesTrains();
+                    std::cout << "Les trains ont redemarre, l'arret d'urgence est fini." << std::endl;
                 }
             }
         }
