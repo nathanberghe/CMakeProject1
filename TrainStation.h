@@ -18,6 +18,8 @@ private:
     std::string nom;
     Coordonnees position;
     int passagers;
+    float tempsDepuisDerniereRegeneration = 0.0f;
+    float intervalleDeRegeneration = 30.0f;
 
 public:
     Station(std::string nom, Coordonnees pos, int passagersInitiaux = 0)
@@ -27,7 +29,8 @@ public:
     Coordonnees getPosition() const { return position; }
     void reinitialiserEtGenererPassagers();
     std::string getNom() const { return nom; }  // Ajout de la méthode getNom
-    int getPassagers() const { return passagers; }  // Ajout de la méthode getPassagerss
+    int getPassagers() const { return passagers; }  // Ajout de la méthode getPassagers
+    void mettreAJour(float deltaTime);
 };
 
 class Train {
@@ -49,6 +52,7 @@ public:
     void avancer(float deltaTime);
     void dessiner(sf::RenderWindow& window, const sf::Font& font);
     std::vector<Station>& getParcours() { return parcours; }
+
 };
 
 class GestionnaireDeTrain {
@@ -66,17 +70,14 @@ private:
     std::vector<Station> stations;
 
 public:
-    void ajouterStation(const Station& station) {
-        stations.push_back(station);
-    }
-
-    void dessinerStations(sf::RenderWindow& window, const sf::Font& font) {
-        for (auto& station : stations) {
-            station.dessiner(window, font);
-        }
-    }
-    std::vector<Station>& getStations() { return stations; }
+    void ajouterStation(const Station& station);
+    void dessinerStations(sf::RenderWindow& window, const sf::Font& font);
+    void mettreAJour(float deltaTime);
 };
 
 
 #endif
+
+
+
+

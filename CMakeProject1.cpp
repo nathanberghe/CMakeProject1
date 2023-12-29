@@ -12,6 +12,14 @@ void Station::reinitialiserEtGenererPassagers() {
     passagers = rand() % 50 + 10;  // Générer un nouveau nombre aléatoire de passagers
 }
 
+void Station::mettreAJour(float deltaTime) {
+    tempsDepuisDerniereRegeneration += deltaTime;
+    if (tempsDepuisDerniereRegeneration >= intervalleDeRegeneration) {
+        reinitialiserEtGenererPassagers();
+        tempsDepuisDerniereRegeneration = 0.0f;
+    }
+}
+
 
 void Station::dessiner(sf::RenderWindow& window, const sf::Font& font) {
     sf::CircleShape shape(10);
@@ -64,10 +72,11 @@ void Train::avancer(float deltaTime) {
                 int maxPassagersADeposer = passagers * 80 / 100;
                 int passagersADeposer = minPassagersADeposer + rand() % (maxPassagersADeposer - minPassagersADeposer + 1);
                 passagers -= passagersADeposer;
+                parcours[stationActuelle].reinitialiserEtGenererPassagers();
                 std::cout << "Le train" << numeroTrain << " depose " << passagersADeposer << " passagers a la station " << parcours[stationActuelle].getNom() << std::endl;
                 // Prendre les passagers de la station actuelle
                 passagers += parcours[stationActuelle].prendrePassagers();
-                std::cout << "Le train " << numeroTrain << " prend " << passagers << " passagers" << std::endl;
+                std::cout << "Le train " << numeroTrain << " a " << passagers << " passagers" << std::endl;
                 parcours[stationActuelle].reinitialiserEtGenererPassagers();
             }
             tempsAttente = 5.0f;  // Attente à la station avant de partir
@@ -91,6 +100,8 @@ void Train::dessiner(sf::RenderWindow& window, const sf::Font& font) {
     window.draw(text);
 }
 
+/* GESTIONNAIRE DE TRAIN*/
+
 void GestionnaireDeTrain::ajouterTrain(std::unique_ptr<Train> train) {
     trains.push_back(std::move(train));
 }
@@ -108,6 +119,24 @@ void GestionnaireDeTrain::mettreAJour(float deltaTime) {
 void GestionnaireDeTrain::dessiner(sf::RenderWindow& window, const sf::Font& font) {
     for (auto& train : trains) {
         train->dessiner(window, font);
+    }
+}
+
+/*GESTIONNAIRE DE STATION*/
+
+void GestionnaireDeStations::ajouterStation(const Station& station) {
+    stations.push_back(station);
+}
+
+void GestionnaireDeStations::dessinerStations(sf::RenderWindow& window, const sf::Font& font) {
+    for (auto& station : stations) {
+        station.dessiner(window, font);
+    }
+}
+
+void GestionnaireDeStations::mettreAJour(float deltaTime) {
+    for (auto& station : stations) {
+        station.mettreAJour(deltaTime);
     }
 }
 
@@ -129,25 +158,18 @@ int main() {
 
     //SENS 1
     Station paris("Paris", { 100, 300 });
-    paris.reinitialiserEtGenererPassagers();
     gestionnaireStations.ajouterStation(paris);
     Station lyon("Lyon", { 250, 300 });
-    lyon.reinitialiserEtGenererPassagers();
     gestionnaireStations.ajouterStation(lyon);
     Station marseille("Marseille", { 400, 300 });
-    marseille.reinitialiserEtGenererPassagers();
     gestionnaireStations.ajouterStation(marseille);
     Station lille("Lille", { 500, 300 });
-    lille.reinitialiserEtGenererPassagers();
     gestionnaireStations.ajouterStation(lille);
     Station rennes("Rennes", { 700,300 });
-    rennes.reinitialiserEtGenererPassagers();
     gestionnaireStations.ajouterStation(rennes);
     Station toulouse("Toulouse", { 800,300 });
-    toulouse.reinitialiserEtGenererPassagers();
     gestionnaireStations.ajouterStation(toulouse);
     Station bruges("Bruges", { 950,300 });
-    bruges.reinitialiserEtGenererPassagers();
     gestionnaireStations.ajouterStation(bruges);
 
     //SENS 2
@@ -186,6 +208,8 @@ int main() {
 
         float deltaTime = clock.restart().asSeconds();
 
+        gestionnaireStations.mettreAJour(deltaTime);
+
         window.clear(sf::Color::Black);
 
         // Gérer l'ajout des trains
@@ -217,10 +241,7 @@ int main() {
             sf::Vertex(sf::Vector2f(lille2.getPosition().x, lille2.getPosition().y))
         };
         window.draw(line2, 7, sf::LinesStrip);
-
-        for (auto& station : gestionnaireStations.getStations()) {
-            station.dessiner(window, font);
-        }
+        gestionnaireStations.dessinerStations(window, font);
 
         gestionnaire.mettreAJour(deltaTime);
         gestionnaire.dessiner(window, font);
@@ -230,3 +251,5 @@ int main() {
 
     return 0;
 }
+
+
