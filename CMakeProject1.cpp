@@ -54,17 +54,14 @@ void Train::ajouterStation(const Station& station) {
 }
 
 void Train::avancer(float deltaTime) {
-    // Si le train a déjà terminé son parcours, il ne fait rien
     if (estArrive) {
         return;
     }
 
-    // Gestion du temps d'attente à la station
     if (tempsAttente > 0) {
         tempsAttente -= deltaTime;
         if (tempsAttente <= 0) {
             enMouvement = true;
-            // Affichage de départ de la station actuelle
             if (stationActuelle < parcours.size()) {
                 std::cout << "Le train " << numeroTrain << " quitte la station " << parcours[stationActuelle].getNom() << std::endl;
             }
@@ -72,37 +69,20 @@ void Train::avancer(float deltaTime) {
         return;
     }
 
-    // Déplacement du train
     if (enMouvement && stationActuelle < parcours.size()) {
         position.x += vitesse.x * deltaTime;
-        // Vérifier si le train a atteint la prochaine station
         if (position.x >= parcours[stationActuelle].getPosition().x) {
             position.x = parcours[stationActuelle].getPosition().x;
             enMouvement = false;
             std::cout << "Le train " << numeroTrain << " est arrive a la station " << parcours[stationActuelle].getNom() << std::endl;
 
-            // Dernière station : préparer pour le retour ou terminer le parcours
             if (stationActuelle == parcours.size() - 1) {
                 std::cout << "Le train " << numeroTrain << " depose tous les passagers a la station " << parcours[stationActuelle].getNom() << std::endl;
                 passagers = 0;
-                estArrive = true; // Le train a terminé son parcours
+
+                estSurParcoursRetour = !estSurParcoursRetour;
                 parcours.clear();
-                // Configurer le parcours pour le demi-tour
-                if (estSurParcoursRetour == true) {
-                    // Si le train est sur le parcours de retour, le reconfigurer pour l'aller
-                    position.y = 300;
-                    ajouterStation(paris); 
-                    ajouterStation(lyon);
-                    ajouterStation(marseille);
-                    ajouterStation(lille);
-                    ajouterStation(rennes);
-                    ajouterStation(toulouse);
-                    ajouterStation(bruges);
-                    estSurParcoursRetour = false;
-                    std::cout << "Changement de sens : Le train " << numeroTrain << " repart vers le parcours aller." << std::endl;
-                }
-                else {
-                    // Si le train est sur le parcours d'aller, le reconfigurer pour le retour
+                if (estSurParcoursRetour) {
                     position.y = altitudeRetour;
                     ajouterStation(bruges2);
                     ajouterStation(toulouse2);
@@ -111,33 +91,41 @@ void Train::avancer(float deltaTime) {
                     ajouterStation(marseille2);
                     ajouterStation(lyon2);
                     ajouterStation(paris2);
-                    estSurParcoursRetour = true;
-                    std::cout << "Changement de sens : Le train " << numeroTrain << " repart vers le parcours retour." << std::endl;
+                }
+                else {
+                    position.y = 300;
+                    ajouterStation(paris);
+                    ajouterStation(lyon);
+                    ajouterStation(marseille);
+                    ajouterStation(lille);
+                    ajouterStation(rennes);
+                    ajouterStation(toulouse);
+                    ajouterStation(bruges);
                 }
 
-                stationActuelle = 0; // Réinitialiser l'indice de la station
+                std::cout << "Changement de sens : Le train " << numeroTrain << " repart vers le " << (estSurParcoursRetour ? "parcours retour." : "parcours aller.") << std::endl;
+                stationActuelle = 0;
+                setVitesse(Coordonnees(-vitesse.x, 0));
                 estArrive = false;
-                setVitesse(Coordonnees(-vitesse.x, 0)); // Inverser la direction pour le retour
             }
             else {
-                // Gestion habituelle des passagers
                 int minPassagersADeposer = passagers * 40 / 100;
                 int maxPassagersADeposer = passagers * 80 / 100;
                 int passagersADeposer = minPassagersADeposer + rand() % (maxPassagersADeposer - minPassagersADeposer + 1);
                 passagers -= passagersADeposer;
                 parcours[stationActuelle].reinitialiserEtGenererPassagers();
-                std::cout << "Le train " << numeroTrain << " depose " << passagersADeposer << " passagers a la station " << parcours[stationActuelle].getNom() << std::endl;
 
                 passagers += parcours[stationActuelle].prendrePassagers();
                 std::cout << "Le train " << numeroTrain << " prend " << passagers << " passagers" << std::endl;
                 parcours[stationActuelle].reinitialiserEtGenererPassagers();
 
-                tempsAttente = 5.0f; // Attente à la station
-                stationActuelle++; // Avancer à la prochaine station
+                tempsAttente = 5.0f;
+                stationActuelle++;
             }
         }
     }
 }
+
 
 
 void Train::dessiner(sf::RenderWindow& window, const sf::Font& font) {
@@ -229,7 +217,7 @@ int main() {
 
     std::vector<std::unique_ptr<Train>> trainsPrepares;
 
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < 3; ++i) {
         auto train = std::make_unique<Train>(Coordonnees(100, 300), i + 1);
         train->ajouterStation(paris);
         train->ajouterStation(lyon);
@@ -238,7 +226,22 @@ int main() {
         train->ajouterStation(rennes);
         train->ajouterStation(toulouse);
         train->ajouterStation(bruges);
+
         train->setVitesse(Coordonnees(50, 0));
+        trainsPrepares.push_back(std::move(train));
+    }
+
+    for (int i = 0; i < 1; ++i) {
+        auto train = std::make_unique<Train>(Coordonnees(950, 400), i + 1);
+        train->ajouterStation(paris2);
+        train->ajouterStation(lyon2);
+        train->ajouterStation(marseille2);
+        train->ajouterStation(lille2);
+        train->ajouterStation(rennes2);
+        train->ajouterStation(toulouse2);
+        train->ajouterStation(bruges2);
+
+        train->setVitesse(Coordonnees(-50, 0));
         trainsPrepares.push_back(std::move(train));
     }
 
