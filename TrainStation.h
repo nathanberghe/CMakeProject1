@@ -44,6 +44,8 @@ private:
     int passagers;
     int numeroTrain;
     bool estArrive;
+    bool estSurParcoursRetour = false;
+    float altitudeRetour;
 
 public:
     Train(Coordonnees pos, int num) : position(pos), stationActuelle(0), enMouvement(true), tempsAttente(0.0f), passagers(0), numeroTrain(num) {}
@@ -60,7 +62,9 @@ public:
         enMouvement = true;
         estArrive = false; // Vous pouvez choisir de marquer le train comme arrivé ou gérer cet état séparément.
     }
-
+    void setAltitudeRetour(float altitude) {
+        altitudeRetour = altitude;
+    }
 };
 
 class GestionnaireDeTrain {
