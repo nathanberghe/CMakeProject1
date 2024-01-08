@@ -63,7 +63,7 @@ void Train::avancer(float deltaTime) {
         if (tempsAttente <= 0) {
             enMouvement = true;
             if (stationActuelle < parcours.size()) {
-                std::cout << "Le train " << numeroTrain << " quitte la station " << parcours[stationActuelle].getNom() << std::endl;
+                std::cout << "Le train " << numeroTrain << " quitte la station " << parcours[stationActuelle-1].getNom() << std::endl;
             }
         }
         return;
@@ -79,11 +79,11 @@ void Train::avancer(float deltaTime) {
             if (stationActuelle == parcours.size() - 1) {
                 std::cout << "Le train " << numeroTrain << " depose tous les passagers a la station " << parcours[stationActuelle].getNom() << std::endl;
                 passagers = 0;
-
                 estSurParcoursRetour = !estSurParcoursRetour;
                 parcours.clear();
+
                 if (estSurParcoursRetour) {
-                    position.y = altitudeRetour;
+                    position.y = 400; // Position Y pour le parcours retour
                     ajouterStation(bruges2);
                     ajouterStation(toulouse2);
                     ajouterStation(rennes2);
@@ -91,9 +91,10 @@ void Train::avancer(float deltaTime) {
                     ajouterStation(marseille2);
                     ajouterStation(lyon2);
                     ajouterStation(paris2);
+                    setVitesse(Coordonnees(-50, 0)); // Vitesse pour le parcours retour
                 }
                 else {
-                    position.y = 300;
+                    position.y = 300; // Position Y pour le parcours aller
                     ajouterStation(paris);
                     ajouterStation(lyon);
                     ajouterStation(marseille);
@@ -101,13 +102,14 @@ void Train::avancer(float deltaTime) {
                     ajouterStation(rennes);
                     ajouterStation(toulouse);
                     ajouterStation(bruges);
+                    setVitesse(Coordonnees(50, 0)); 
                 }
 
                 std::cout << "Changement de sens : Le train " << numeroTrain << " repart vers le " << (estSurParcoursRetour ? "parcours retour." : "parcours aller.") << std::endl;
                 stationActuelle = 0;
-                setVitesse(Coordonnees(-vitesse.x, 0));
                 estArrive = false;
             }
+
             else {
                 int minPassagersADeposer = passagers * 40 / 100;
                 int maxPassagersADeposer = passagers * 80 / 100;
@@ -125,6 +127,8 @@ void Train::avancer(float deltaTime) {
         }
     }
 }
+
+
 
 
 
@@ -226,23 +230,9 @@ int main() {
         train->ajouterStation(rennes);
         train->ajouterStation(toulouse);
         train->ajouterStation(bruges);
-
         train->setVitesse(Coordonnees(50, 0));
         trainsPrepares.push_back(std::move(train));
-    }
 
-    for (int i = 0; i < 1; ++i) {
-        auto train = std::make_unique<Train>(Coordonnees(950, 400), i + 1);
-        train->ajouterStation(paris2);
-        train->ajouterStation(lyon2);
-        train->ajouterStation(marseille2);
-        train->ajouterStation(lille2);
-        train->ajouterStation(rennes2);
-        train->ajouterStation(toulouse2);
-        train->ajouterStation(bruges2);
-
-        train->setVitesse(Coordonnees(-50, 0));
-        trainsPrepares.push_back(std::move(train));
     }
 
     sf::Clock clock;

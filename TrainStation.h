@@ -69,9 +69,10 @@ public:
 
 class GestionnaireDeTrain {
 private:
-    std::vector<std::unique_ptr<Train>> trains;
+
 
 public:
+    std::vector<std::unique_ptr<Train>> trains;
     void ajouterTrain(std::unique_ptr<Train> train);
     void mettreAJour(float deltaTime);
     void dessiner(sf::RenderWindow& window, const sf::Font& font);
